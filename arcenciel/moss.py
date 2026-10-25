@@ -117,9 +117,14 @@ def resolve_profile(
         checkpoint = matches[0]
     else:
         candidates = moss_models(catalog, sft_only=True)
-        if len(candidates) != 1:
+        configured = raw_defaults.get("modelName")
+        preferred = configured if isinstance(configured, str) else "moss_image_sft_int8_convrot.safetensors"
+        if preferred in candidates:
+            checkpoint = preferred
+        elif len(candidates) == 1:
+            checkpoint = next(iter(candidates))
+        else:
             raise ValueError("No unique MOSS SFT model is available. Select an available MOSS checkpoint explicitly.")
-        checkpoint = next(iter(candidates))
     return checkpoint, {
         "available": True,
         "modes": list(modes),

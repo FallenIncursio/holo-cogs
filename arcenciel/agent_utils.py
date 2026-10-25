@@ -170,7 +170,20 @@ def choose_model(
     if not candidates and len(selected) >= 3:
         candidates = [choice for choice in models.values() if selected.casefold() in choice.name.casefold()]
     if not candidates:
-        raise ValueError(f'Checkpoint "{selected}" is not available to this account.')
+        entries = catalog.get("checkpoints", [])
+        matching = [
+            entry for entry in entries if is_object(entry)
+            and isinstance(entry.get("name"), str) and _name_matches(str(entry["name"]), selected)
+        ] if is_array(entries) else []
+        if len(matching) == 1:
+            entry = matching[0]
+            if entry.get("storageState") != "loaded":
+                raise ValueError(f'Checkpoint "{selected}" is visible but is not loaded on the generator.')
+            raise ValueError(f'Checkpoint "{selected}" is loaded but its model family is not supported by this tool.')
+        raise ValueError(
+            f'Checkpoint "{selected}" is absent from the accessible generator catalog. '
+            'It may not be installed or enabled, or access may be restricted.'
+        )
     if len(candidates) != 1:
         raise ValueError(f'Checkpoint "{selected}" is ambiguous.')
     choice = candidates[0]
